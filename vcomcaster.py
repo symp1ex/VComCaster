@@ -1,11 +1,12 @@
-#0.1
-from logger import log_console_out, exception_handler, read_config_ini
+#0.2.2
+from logger import log_console_out, exception_handler, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding
 from winsettings import init_win_settings
+from winterminal import win_terminal
 import time
 import pystray
-import io, os
+import io, os, sys, ctypes
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -17,12 +18,10 @@ stop_event = threading.Event()
 def reconnetion_action():
     config = read_config_ini("config.ini")
     timeout = int(config.get("device", "timeout_reconnect", fallback=None))
-
     stop_port_forwarding(stop_event)
-    stop_event.clear()
-    time.sleep(3)
     log_console_out(f"Повторное подключение через ({timeout}) секунд", "vcc")
     time.sleep(timeout)
+    stop_event.clear()
     start_listen_port(stop_event)
 
 
@@ -52,8 +51,6 @@ def exit_action(icon):
         icon.stop()  # Останавливаем иконку в трее
         root.quit()  # Закрываем окно подтверждения
         stop_port_forwarding(stop_event)
-        stop_event.clear()
-        time.sleep(3)
         os._exit(0)
     else:
         root.destroy()
@@ -70,12 +67,13 @@ def setup_icon_tray():
     # Создаём меню
     menu = pystray.Menu(
         pystray.MenuItem("Переподключиться", reconnetion_action),
+        pystray.MenuItem("Окно терминала", win_terminal),
         pystray.MenuItem("Настройки", open_settings),
         pystray.MenuItem("Выход", exit_action)
     )
 
     # Создаём иконку и добавляем подсказку (tooltip) при наведении
-    icon = pystray.Icon("test_icon", icon_image, menu=menu, title=f"VComCaster v.0.1 \nПрослушивается порт: {input_com_port}")  # Подсказка при наведении
+    icon = pystray.Icon("test_icon", icon_image, menu=menu, title=f"{version} \nПрослушивается порт: {input_com_port}")  # Подсказка при наведении
     icon.run()
 
 

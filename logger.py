@@ -4,6 +4,8 @@ import traceback
 from datetime import datetime, timedelta
 import configparser
 
+version = "VComCaster v0.2.2"
+
 def create_confgi_ini():
     try:
         # Создание объекта парсера
@@ -28,7 +30,7 @@ def create_confgi_ini():
 
         log_console_out("Создан 'config.ini' по умолчанию", "vcc")
     except Exception as e:
-        log_console_out("Не удалось пересоздать 'config.ini', продолжение работы невозможно.", "vcc")
+        log_console_out("Error: Не удалось пересоздать 'config.ini', продолжение работы невозможно.", "vcc")
         exception_handler(type(e), e, e.__traceback__, "vcc")
         os._exit(1)
 
@@ -38,10 +40,10 @@ def read_config_ini(ini_file):
         config.read(ini_file)
         return config
     except FileNotFoundError:
-        log_console_out("'config.ini' не найден, будет создан новый конфиг.", "vcc")
+        log_console_out("Error: 'config.ini' не найден, будет создан новый конфиг.", "vcc")
         create_confgi_ini()
     except Exception as e:
-        log_console_out("Произошло исключение при чтении 'config.ini', будет создан новый конфиг.", "vcc")
+        log_console_out("Error: Произошло исключение при чтении 'config.ini', будет создан новый конфиг.", "vcc")
         exception_handler(type(e), e, e.__traceback__, "vcc")
         create_confgi_ini()
 

@@ -1,3 +1,5 @@
+import time
+
 from logger import log_console_out, exception_handler, read_config_ini
 import serial
 import threading
@@ -39,15 +41,16 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
 
 
 
+
 def stop_port_forwarding(stop_event):
     """
     Функция для остановки прослушивания COM-порта, устанавливая флаг завершения.
 
     :param stop_event: Объект threading.Event для остановки потока.
     """
-    stop_event.set()
     log_console_out("Остановка прослушивания COM-портов...", "vcc")
-
+    stop_event.set()
+    time.sleep(2)
 
 def start_listen_port(stop_event):
     config = read_config_ini("config.ini")
