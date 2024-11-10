@@ -1,7 +1,7 @@
-#0.2.2
+#0.2.3.2
 from logger import log_console_out, exception_handler, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
-from proxycom import start_listen_port, stop_port_forwarding
+from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
 from winsettings import init_win_settings
 from winterminal import win_terminal
 import time
@@ -13,6 +13,7 @@ from PIL import Image, ImageTk
 import threading
 
 stop_event = threading.Event()
+icon = None  # Глобальная переменная для иконки
 
 # Функция для обработки первого пункта меню
 def reconnetion_action():
@@ -55,14 +56,20 @@ def exit_action(icon):
     else:
         root.destroy()
 
-
 # Функция для создания иконки
 def setup_icon_tray():
+    global icon  # Используем глобальную переменную для иконки
+    config = read_config_ini("config.ini")
+    autostart = int(config.get("global", "autostart", fallback=None))
+
     config = read_config_ini("config.ini")
     input_com_port = config.get("device", "input_port", fallback=None)
 
-    # Преобразуем бинарные данные для иконки
-    icon_image = Image.open(io.BytesIO(icon_data_start))
+    if autostart == True:
+        # Преобразуем бинарные данные для иконки
+        icon_image = Image.open(io.BytesIO(icon_data_start))
+    else:
+        icon_image = Image.open(io.BytesIO(icon_data_stop))
 
     # Создаём меню
     menu = pystray.Menu(
@@ -73,8 +80,7 @@ def setup_icon_tray():
     )
 
     # Создаём иконку и добавляем подсказку (tooltip) при наведении
-    icon = pystray.Icon("test_icon", icon_image, menu=menu, title=f"{version} \nПрослушивается порт: {input_com_port}")  # Подсказка при наведении
-    icon.run()
+    icon = pystray.Icon("icon", icon_image, menu=menu, title=f"{version} \nПрослушивается порт: {input_com_port}")  # Подсказка при наведении
 
 
 # Функция для запуска tkinter в отдельном потоке
@@ -83,13 +89,31 @@ def run_tkinter():
     root.withdraw()  # Скрываем основное окно
     root.mainloop()
 
+def check_icon_status():
+    status_forwarding_thread()
+    def swap_icon():
+        while True:
+            from proxycom import icon_status
+            if icon_status == 0:
+                icon.icon = Image.open(io.BytesIO(icon_data_stop))
+            else:
+                icon.icon = Image.open(io.BytesIO(icon_data_start))
+            time.sleep(3)
+
+    swap_icon = threading.Thread(target=swap_icon)
+    swap_icon.start()
 
 # Запускаем иконку и tkinter в отдельных потоках
 if __name__ == "__main__":
+    config = read_config_ini("config.ini")
+    autostart = int(config.get("global", "autostart", fallback=None))
+
     # Запускаем tkinter в отдельном потоке
     tkinter_thread = threading.Thread(target=run_tkinter, daemon=True)
     tkinter_thread.start()
 
-    start_listen_port(stop_event)
-    # Запускаем иконку в основном потоке
-    setup_icon_tray()
+    setup_icon_tray()  # Создаем иконку
+    if autostart == True:
+        start_listen_port(stop_event)
+    check_icon_status()
+    icon.run()
