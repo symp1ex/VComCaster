@@ -98,7 +98,7 @@ def status_forwarding_thread():
     def check_teard():
         while True:
             check_thread_status(forwarding_thread)
-            time.sleep(1)
+            time.sleep(0.5)
 
     check_teard = threading.Thread(target=check_teard)
 

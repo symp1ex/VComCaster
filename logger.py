@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime, timedelta
 import configparser
 
-version = "VComCaster v0.2.4.3"
+version = "VComCaster v0.2.4.6"
 
 def create_confgi_ini():
     try:
