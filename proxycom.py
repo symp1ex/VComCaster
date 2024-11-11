@@ -5,7 +5,7 @@ import threading
 import os
 
 forwarding_thread = None
-icon_status = 0
+listing_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
     log_console_out(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...", "vcc")
@@ -72,12 +72,12 @@ def stop_port_forwarding(stop_event):
     time.sleep(2)
 
 def check_thread_status(thread):
-    global icon_status
+    global listing_status
     try:
         if thread.is_alive():
-            icon_status = 1
+            listing_status = 1
         else:
-            icon_status = 0
+            listing_status = 0
     except:
         pass
 

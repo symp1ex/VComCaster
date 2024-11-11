@@ -1,4 +1,4 @@
-#0.2.4.6
+#0.2.4.10
 from logger import log_console_out, exception_handler, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
@@ -20,8 +20,8 @@ def reconnetion_action():
     config = read_config_ini("config.ini")
     timeout = int(config.get("device", "timeout_reconnect", fallback=None))
 
-    from proxycom import icon_status
-    if icon_status == 1:
+    from proxycom import listing_status
+    if listing_status == 1:
         stop_port_forwarding(stop_event)
 
     log_console_out(f"Повторное подключение через ({timeout}) секунд", "vcc")
@@ -31,18 +31,19 @@ def reconnetion_action():
 
 
 def stop_listing():
-    root = tk.Toplevel()
-    root.withdraw()  # Скрываем окно до установки иконки
+    from proxycom import listing_status
+    if listing_status == 0:
+        root = tk.Toplevel()
+        root.wm_attributes('-alpha', 0) # Делаем окно полностью прозрачным
+        root.withdraw()  # Скрываем окно до установки иконки
 
-    stop_icon_image = Image.open(io.BytesIO(icon_data_stop))
-    stop_icon_image_tk = ImageTk.PhotoImage(stop_icon_image)
+        stop_icon_image = Image.open(io.BytesIO(icon_data_stop))
+        stop_icon_image_tk = ImageTk.PhotoImage(stop_icon_image)
 
-    # Устанавливаем иконку для окна подтверждения
-    root.stop_icon_image = stop_icon_image_tk
-    root.iconphoto(False, stop_icon_image_tk)
+        # Устанавливаем иконку для окна подтверждения
+        root.stop_icon_image = stop_icon_image_tk
+        root.iconphoto(False, stop_icon_image_tk)
 
-    from proxycom import icon_status
-    if icon_status == 0:
         messagebox.showerror("Ошибка", "Прослушивание портов не запущено", parent=root)
         log_console_out(f"Error: Прослушивание портов не запущено", "vcc")
     else:
@@ -60,6 +61,7 @@ def open_settings():
 def exit_action(icon):
     # Создаём дочернее окно подтверждения
     root = tk.Toplevel()
+    root.wm_attributes('-alpha', 0) # Делаем окно полностью прозрачным
     root.withdraw()  # Скрываем окно до установки иконки
 
     # Загружаем иконку для окна
@@ -116,16 +118,19 @@ def run_tkinter():
     root.withdraw()  # Скрываем основное окно
     root.mainloop()
 
-def check_icon_status():
+def check_listing_status():
     status_forwarding_thread()
     def swap_icon():
+        up = None
         while True:
-            from proxycom import icon_status
-            if icon_status == 0:
+            from proxycom import listing_status
+            if listing_status == 0 and up != 0:
                 icon.icon = Image.open(io.BytesIO(icon_data_stop))
-            else:
+                up = 0
+            elif listing_status == 1 and up != 1:
                 icon.icon = Image.open(io.BytesIO(icon_data_start))
-            time.sleep(3)
+                up =1
+            time.sleep(2)
 
     swap_icon = threading.Thread(target=swap_icon)
     swap_icon.start()
@@ -142,5 +147,5 @@ if __name__ == "__main__":
     setup_icon_tray()  # Создаем иконку
     if autostart == True:
         start_listen_port(stop_event)
-    check_icon_status()
+    check_listing_status()
     icon.run()
