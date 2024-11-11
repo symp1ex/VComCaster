@@ -1,4 +1,4 @@
-#0.2.3.2
+#0.2.4.3
 from logger import log_console_out, exception_handler, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
@@ -52,6 +52,7 @@ def exit_action(icon):
         icon.stop()  # Останавливаем иконку в трее
         root.quit()  # Закрываем окно подтверждения
         stop_port_forwarding(stop_event)
+        time.sleep(5)
         os._exit(0)
     else:
         root.destroy()
@@ -60,10 +61,10 @@ def exit_action(icon):
 def setup_icon_tray():
     global icon  # Используем глобальную переменную для иконки
     config = read_config_ini("config.ini")
-    autostart = int(config.get("global", "autostart", fallback=None))
 
-    config = read_config_ini("config.ini")
+    autostart = int(config.get("global", "autostart", fallback=None))
     input_com_port = config.get("device", "input_port", fallback=None)
+    output_com_port = config.get("device", "output_port", fallback=None)
 
     if autostart == True:
         # Преобразуем бинарные данные для иконки
@@ -80,7 +81,7 @@ def setup_icon_tray():
     )
 
     # Создаём иконку и добавляем подсказку (tooltip) при наведении
-    icon = pystray.Icon("icon", icon_image, menu=menu, title=f"{version} \nПрослушивается порт: {input_com_port}")  # Подсказка при наведении
+    icon = pystray.Icon("icon", icon_image, menu=menu, title=f"{version} \nПрослушиваются порты: {input_com_port}, {output_com_port}")  # Подсказка при наведении
 
 
 # Функция для запуска tkinter в отдельном потоке

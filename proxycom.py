@@ -8,16 +8,25 @@ forwarding_thread = None
 icon_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
+    log_console_out(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...", "vcc")
     try:
         # Открываем входной и выходной COM-порты
         input_ser = serial.Serial(input_com_port, baud_rate, timeout=0.1)
+    except Exception as e:
+        log_console_out(f"Error: Ошибка при попытке открыть порт: {input_com_port}", "vcc")
+        exception_handler(type(e), e, e.__traceback__, "vcc")
+    if input_ser:
+        log_console_out(f"Порт '{input_com_port}'открыт", "vcc")
+
+    try:
+        # Открываем входной и выходной COM-порты
         output_ser = serial.Serial(output_com_port, baud_rate, timeout=0.1)
     except Exception as e:
-        log_console_out(f"Error: Ошибка при попытке занять com-порты", "vcc")
+        log_console_out(f"Error: Ошибка при попытке открыть порт: {output_com_port}", "vcc")
         exception_handler(type(e), e, e.__traceback__, "vcc")
+    if output_ser :
+        log_console_out(f"Порт '{output_com_port}'открыт", "vcc")
 
-
-    log_console_out(f"Слушаем '{input_com_port}' и перенаправляем на '{output_com_port}'...", "vcc")
     try:
         while not stop_event.is_set():  # Добавлена проверка флага stop_event
             if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
@@ -26,6 +35,13 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
 
                 # Пересылаем данные на выходной COM-порт
                 output_ser.write((data + '\r\n').encode('utf-8'))  # Отправляем данные
+            #     time.sleep(0.01)
+            # if output_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
+            #     data = output_ser.readline().decode('utf-8').rstrip()  # Читаем строку
+            #     log_console_out(f"На вход получены данные: {data}", "vcc")
+            #
+            #     # Пересылаем данные на выходной COM-порт
+            #     input_ser.write((data + '\r\n').encode('utf-8'))  # Отправляем данные
             else:
                 time.sleep(0.01)
     finally:
