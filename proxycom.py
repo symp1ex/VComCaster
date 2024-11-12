@@ -1,5 +1,5 @@
 import time
-from logger import log_console_out, exception_handler, read_config_ini
+from logger import logger_vcc, read_config_ini
 import serial
 import threading
 import os
@@ -8,30 +8,28 @@ forwarding_thread = None
 listing_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
-    log_console_out(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...", "vcc")
+    logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
     try:
         # Открываем входной и выходной COM-порты
         input_ser = serial.Serial(input_com_port, baud_rate, timeout=0.1)
-    except Exception as e:
-        log_console_out(f"Error: Ошибка при попытке открыть порт: {input_com_port}", "vcc")
-        exception_handler(type(e), e, e.__traceback__, "vcc")
+    except Exception:
+        logger_vcc.error(f"Ошибка при попытке открыть порт {e}: {input_com_port}", exc_info=True)
     if input_ser:
-        log_console_out(f"Порт '{input_com_port}'открыт", "vcc")
+        logger_vcc.info(f"Порт '{input_com_port}'открыт")
 
     try:
         # Открываем входной и выходной COM-порты
         output_ser = serial.Serial(output_com_port, baud_rate, timeout=0.1)
-    except Exception as e:
-        log_console_out(f"Error: Ошибка при попытке открыть порт: {output_com_port}", "vcc")
-        exception_handler(type(e), e, e.__traceback__, "vcc")
+    except Exception:
+        logger_vcc.error(f"Ошибка при попытке открыть порт: {output_com_port}", exc_info=True)
     if output_ser :
-        log_console_out(f"Порт '{output_com_port}'открыт", "vcc")
+        logger_vcc.info(f"Порт '{output_com_port}'открыт")
 
     try:
         while not stop_event.is_set():  # Добавлена проверка флага stop_event
             if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
                 data = input_ser.readline().decode('utf-8').rstrip()  # Читаем строку
-                log_console_out(f"На вход получены данные: {data}", "vcc")
+                logger_vcc.info(f"На вход получены данные: {data}")
 
                 # Пересылаем данные на выходной COM-порт
                 output_ser.write((data + '\r\n').encode('utf-8'))  # Отправляем данные
@@ -47,16 +45,14 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
     finally:
         try:
             input_ser.close()  # Закрываем входной COM-порт
-            log_console_out(f"Порт '{input_com_port}' освобожден", "vcc")
-        except Exception as e:
-            log_console_out(f"Error: Не удалось освободить порт: '{input_com_port}'", "vcc")
-            exception_handler(type(e), e, e.__traceback__, "vcc")
+            logger_vcc.info(f"Порт '{input_com_port}' освобожден")
+        except Exception:
+            logger_vcc.error(f"Не удалось освободить порт: '{input_com_port}'", exc_info=True)
         try:
             output_ser.close()  # Закрываем выходной COM-порт
-            log_console_out(f"Порт '{output_com_port}' освобожден", "vcc")
-        except Exception as e:
-            log_console_out(f"Error: Не удалось освободить порт: '{output_com_port}'", "vcc")
-            exception_handler(type(e), e, e.__traceback__, "vcc")
+            logger_vcc.info(f"Порт '{output_com_port}' освобожден")
+        except Exception:
+            logger_vcc.error(f"Не удалось освободить порт: '{output_com_port}'", exc_info=True)
 
 
 
@@ -67,7 +63,7 @@ def stop_port_forwarding(stop_event):
 
     :param stop_event: Объект threading.Event для остановки потока.
     """
-    log_console_out("Остановка прослушивания COM-портов...", "vcc")
+    logger_vcc.info("Остановка прослушивания COM-портов...")
     stop_event.set()
     time.sleep(2)
 
