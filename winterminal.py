@@ -1,4 +1,4 @@
-from logger import log_console_out, exception_handler, read_config_ini, version
+from logger import version
 import sys
 from icon import icon_data_start
 import tkinter as tk
@@ -11,8 +11,11 @@ class RedirectText:
         self.text_widget = text_widget
 
     def write(self, message):
-        self.text_widget.insert(tk.END, message)
-        self.text_widget.yview(tk.END)
+        if self.text_widget.winfo_exists():
+            self.text_widget.config(state=tk.NORMAL)
+            self.text_widget.insert(tk.END, message)
+            self.text_widget.yview(tk.END)
+            self.text_widget.config(state=tk.DISABLED)
 
     def flush(self):
         # Пустой метод, необходимый для совместимости с sys.stdout
@@ -27,7 +30,7 @@ def win_terminal():
     win_terminal.minsize(width=730, height=360)
 
     # Создание текстового виджета для отображения вывода
-    text_widget = scrolledtext.ScrolledText(win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
+    text_widget = tk.scrolledtext.ScrolledText(win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
     text_widget.pack()
 
     start_icon_image = Image.open(io.BytesIO(icon_data_start))
@@ -42,4 +45,3 @@ def win_terminal():
 
     # Запуск основного цикла Tkinter
     win_terminal.transient()
-

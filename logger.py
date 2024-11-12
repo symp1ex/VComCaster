@@ -1,10 +1,8 @@
-import os
-import sys
-import traceback
-from datetime import datetime, timedelta
-import configparser
+import configparser, os,sys
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
-version = "VComCaster v0.2.4.10"
+version = "VComCaster v0.2.5.3"
 
 def create_confgi_ini():
     try:
@@ -12,12 +10,12 @@ def create_confgi_ini():
         config = configparser.ConfigParser()
 
         # Создание секций
-        config['global'] = {}
+        config['app'] = {}
         config['device'] = {}
 
         # Запись значения в секцию и ключ
-        config['global']['autostart'] = '0'
-        config['global']['logs-autoclear-days'] = '7'
+        config['app']['autostart_listing'] = '0'
+        config['app']['logs-autoclear-days'] = '7'
         config['device']['input_port'] = ''
         config['device']['output_port'] = ''
         config['device']['port_baudrate'] = ''
@@ -28,10 +26,9 @@ def create_confgi_ini():
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
 
-        log_console_out("Создан 'config.ini' по умолчанию", "vcc")
-    except Exception as e:
-        log_console_out("Error: Не удалось пересоздать 'config.ini', продолжение работы невозможно.", "vcc")
-        exception_handler(type(e), e, e.__traceback__, "vcc")
+        logger_vcc.info("Создан 'config.ini' по умолчанию")
+    except Exception:
+        logger_vcc.critical("Не удалось пересоздать 'config.ini', продолжение работы невозможно.", exc_info=True)
         os._exit(1)
 
 def read_config_ini(ini_file):
@@ -40,74 +37,72 @@ def read_config_ini(ini_file):
         config.read(ini_file)
         return config
     except FileNotFoundError:
-        log_console_out("Error: 'config.ini' не найден, будет создан новый конфиг.", "vcc")
+        logger_vcc.warning("Файл'config.ini' не найден, будет создан новый конфиг.")
         create_confgi_ini()
-    except Exception as e:
-        log_console_out("Error: Произошло исключение при чтении 'config.ini', будет создан новый конфиг.", "vcc")
-        exception_handler(type(e), e, e.__traceback__, "vcc")
+    except Exception:
+        logger_vcc.error("Произошло исключение при чтении 'config.ini', будет создан новый конфиг.", exc_info=True)
         create_confgi_ini()
 
-def log_with_timestamp(message, name):
-    try:
-        ini_file = "config.ini"
-        config = read_config_ini(ini_file)
 
-        log_folder = 'logs'
-        if not os.path.exists(log_folder):
-            os.makedirs(log_folder)
+class StdoutRedirectHandler(logging.StreamHandler):
+    def __init__(self):
+        # Вызываем StreamHandler с sys.stdout
+        super().__init__(stream=sys.stdout)
 
-        # Получаем текущую дату
-        current_date = datetime.now()
-
-        days = int(config.get("global", "logs-autoclear-days", fallback=7))
-        # Определяем дату, старше которой логи будут удаляться
-        old_date_limit = current_date - timedelta(days=days)
-
-        # Удаляем логи старше 14 дней
-        for file_name in os.listdir(log_folder):
-            file_path = os.path.join(log_folder, file_name)
-            file_creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
-            if file_creation_time < old_date_limit:
-                os.remove(file_path)
-
-        timestamp = datetime.now().strftime("%Y-%m-%d")
-        log_file = os.path.join(log_folder, f"{timestamp}-{name}.log")
-        default_stdout = sys.stdout
-        sys.stdout = open(log_file, 'a')
-
-        timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S.%f")[:-3]+"]"
-        print(f"{timestamp} {message}")
-        sys.stdout.close()
-        sys.stdout = default_stdout
-    except:
-        pass
+    def emit(self, record):
+        # Форматируем сообщение перед выводом
+        msg = self.format(record)
+        # Пишем сообщение в sys.stdout (перехватывается виджетом)
+        sys.stdout.write(msg + '\n')
 
 
-def log_console_out(message, name):
-    try:
-        timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S.%f")[:-3]+"]"
-        print(f"{timestamp} {message}")
-        log_with_timestamp(message, name)
-    except:
-        pass
-    
-    
-def exception_handler(exc_type, exc_value, exc_traceback, name):
-    try:
-        error_message = f"ERROR: An exception occurred + \n"
-        error_message += ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        log_with_timestamp(error_message, name)
-        # Вызываем стандартный обработчик исключений для вывода на экран
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    except:
-        pass
+def logger(file_name, with_console=False):
+    ini_file = "config.ini"
+    config = read_config_ini(ini_file)
+    days = int(config.get("global", "logs-autoclear-days", fallback=7))
 
-def exception_handler_console_out(exc_type, exc_value, exc_traceback, name):
-    try:
-        error_message = f"ERROR: An exception occurred + \n"
-        error_message += ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        log_console_out(error_message, name)
-        # Вызываем стандартный обработчик исключений для вывода на экран
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    except:
-        pass
+    # Создаем логгер
+    logger = logging.getLogger(file_name)
+    logger.setLevel(logging.DEBUG)  # Устанавливаем уровень логирования
+
+    # Проверяем, не был ли уже добавлен обработчик для этого логгера
+    if not logger.hasHandlers():
+        # Создаем обработчик для вывода в файл с ротацией
+        file_handler = TimedRotatingFileHandler(
+            f"{file_name}.log",
+            when="D",         # Ротация раз в день
+            interval=1,       # Интервал: 1 день
+            backupCount=days,     # Хранить архивы не дольше 7 дней
+            encoding="utf-8"
+        )
+        file_handler.setLevel(logging.DEBUG)
+
+        # Форматтер для настройки формата сообщений
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+        file_handler.setFormatter(formatter)
+
+        # Добавляем обработчик к логгеру
+        logger.addHandler(file_handler)
+
+        # Добавляем обработчик для вывода на консоль
+        if with_console:
+            #console_handler = logging.StreamHandler() # вывод в стандартный обработчик бибилиотеки
+            console_handler = StdoutRedirectHandler() # в системный вывод
+            console_handler.setLevel(logging.INFO)
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+
+    return logger
+
+logger_vcc = logger("logs\\vcc", with_console=True)
+logger_vcc_of = logger("logs\\vcc", with_console=False)
+
+
+
+# logger.debug("сообщение отладки")
+# logger.info("информационное сообщение")
+# logger.warning("предупреждение")
+# logger.error("ошибка")
+# logger.critical("критическое сообщение")
+#logger.error("Сообщение с включенным стеком", exc_info=True)
+# logger.exception("стек исключений")

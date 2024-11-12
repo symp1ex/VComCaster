@@ -1,5 +1,5 @@
-#0.2.4.10
-from logger import log_console_out, exception_handler, read_config_ini, version
+#0.2.5.3
+from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
 from winsettings import init_win_settings
@@ -24,10 +24,9 @@ def reconnetion_action():
     if listing_status == 1:
         stop_port_forwarding(stop_event)
 
-    log_console_out(f"Повторное подключение через ({timeout}) секунд", "vcc")
-    time.sleep(timeout)
+    logger_vcc.info(f"Повторное подключение через ({timeout}) секунд")
     stop_event.clear()
-    start_listen_port(stop_event)
+    threading.Timer(timeout, start_listen_port, args=(stop_event,)).start()
 
 
 def stop_listing():
@@ -44,8 +43,8 @@ def stop_listing():
         root.stop_icon_image = stop_icon_image_tk
         root.iconphoto(False, stop_icon_image_tk)
 
-        messagebox.showerror("Ошибка", "Прослушивание портов не запущено", parent=root)
-        log_console_out(f"Error: Прослушивание портов не запущено", "vcc")
+        tk.messagebox.showerror("Ошибка", "Прослушивание портов не запущено", parent=root)
+        logger_vcc.error(f"Прослушивание портов не запущено")
     else:
         stop_port_forwarding(stop_event)
         time.sleep(3)
@@ -73,13 +72,13 @@ def exit_action(icon):
     root.iconphoto(False, stop_icon_image_tk)
 
     # Показать диалоговое окно подтверждения
-    response = messagebox.askyesno("Выход", "Вы уверены, что хотите выйти?", parent=root)
+    response = tk.messagebox.askyesno("Выход", "Вы уверены, что хотите выйти?", parent=root)
 
     if response:
-        icon.stop()  # Останавливаем иконку в трее
-        root.quit()  # Закрываем окно подтверждения
         stop_port_forwarding(stop_event)
         time.sleep(5)
+        icon.stop()  # Останавливаем иконку в трее
+        root.quit()  # Закрываем окно подтверждения
         os._exit(0)
     else:
         root.destroy()
@@ -89,11 +88,11 @@ def setup_icon_tray():
     global icon  # Используем глобальную переменную для иконки
     config = read_config_ini("config.ini")
 
-    autostart = int(config.get("global", "autostart", fallback=None))
+    autostart_listing = int(config.get("app", "autostart_listing", fallback=None))
     input_com_port = config.get("device", "input_port", fallback=None)
     output_com_port = config.get("device", "output_port", fallback=None)
 
-    if autostart == True:
+    if autostart_listing == True:
         # Преобразуем бинарные данные для иконки
         icon_image = Image.open(io.BytesIO(icon_data_start))
     else:
@@ -138,14 +137,14 @@ def check_listing_status():
 # Запускаем иконку и tkinter в отдельных потоках
 if __name__ == "__main__":
     config = read_config_ini("config.ini")
-    autostart = int(config.get("global", "autostart", fallback=None))
+    autostart_listing = int(config.get("app", "autostart_listing", fallback=None))
 
     # Запускаем tkinter в отдельном потоке
     tkinter_thread = threading.Thread(target=run_tkinter, daemon=True)
     tkinter_thread.start()
 
     setup_icon_tray()  # Создаем иконку
-    if autostart == True:
+    if autostart_listing == True:
         start_listen_port(stop_event)
     check_listing_status()
     icon.run()
