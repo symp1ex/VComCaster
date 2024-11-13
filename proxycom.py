@@ -54,8 +54,8 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
             #         input_ser.write((data + '\r\n').encode('utf-8') if cr_lf == 1 else data.encode('utf-8'))
             #     except serial.SerialTimeoutException:
             #         logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
-            # else:
-            #     time.sleep(0.01)
+            else:
+                time.sleep(0.01)
     finally:
         try:
             input_ser.close()  # Закрываем входной COM-порт
