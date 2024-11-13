@@ -1,4 +1,4 @@
-#0.3.1.1
+#0.3.2
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
@@ -28,12 +28,13 @@ def reconnetion_action():
     global stop_tag
     from proxycom import listing_status
     if listing_status == 1:
-        stop_port_forwarding(stop_event)
         stop_tag = 1
+        time.sleep(1) # или блокировать интерфейс на весь тайм-аут перед повтроным запуском прослушивания?
+        stop_port_forwarding(stop_event)
         logger_vcc.info(f"Повторное подключение через ({timeout}) секунд")
         stop_event.clear()
         threading.Timer(timeout, start_listen_port, args=(stop_event,)).start()
-        threading.Timer(timeout, lambda: set_stop_tag(0)).start()
+        threading.Timer(timeout + 1, lambda: set_stop_tag(0)).start()
     else:
         start_listen_port(stop_event)
         stop_tag = 0

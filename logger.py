@@ -3,7 +3,7 @@ import logging
 import time
 from logging.handlers import TimedRotatingFileHandler
 
-version = "VComCaster v0.3.1.1"
+version = "VComCaster v0.3.2"
 
 
 def create_confgi_ini():
@@ -21,10 +21,11 @@ def create_confgi_ini():
         config['app']['autosearch_device'] = '0'
         config['app']['logs-autoclear-days'] = '3'
         config['device']['device_id'] = ''
-        config['device']['cr-lf'] = '0'
-        config['device']['input_port'] = ''
-        config['device']['output_port'] = ''
+        config['device']['input_port'] = 'COM'
+        config['device']['output_port'] = 'COM'
         config['device']['port_baudrate'] = '115200'
+        config['device']['cr'] = '0'
+        config['device']['lf'] = '0'
         config['service']['timeout_autosearch'] = '5'
         config['service']['timeout_reconnect'] = '5'
         config['service']['timeout_clearcash'] = '2'
@@ -67,7 +68,7 @@ class StdoutRedirectHandler(logging.StreamHandler):
 def logger(file_name, with_console=False):
     ini_file = "config.ini"
     config = read_config_ini(ini_file)
-    days = int(config.get("global", "logs-autoclear-days", fallback=7))
+    days = int(config.get("app", "logs-autoclear-days"))
 
     log_folder = "logs"
 

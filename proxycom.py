@@ -9,7 +9,15 @@ listing_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
     config = read_config_ini("config.ini")
-    cr_lf = int(config.get("device", "cr-lf", fallback=None))
+    cr = int(config.get("device", "cr", fallback=None))
+    lf = int(config.get("device", "lf", fallback=None))
+    # Определяем символ конца строки на основе значений cr и lf
+    line_endings = {
+        (1, 1): '\r\n',
+        (1, 0): '\r',
+        (0, 1): '\n',
+        (0, 0): ''  # Если оба равны 0, можно использовать пустую строку
+    }
 
     logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
     try:
@@ -37,9 +45,11 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
                 logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
 
                 output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
-                # Пересылаем данные на выходной COM-порт
+                # Пересылаем данные на выходной COM-поре
                 try:
-                    output_ser.write((data + '\r\n').encode('utf-8') if cr_lf == 1 else data.encode('utf-8'))
+                    # Получаем соответствующий символ конца строки
+                    ending = line_endings.get((cr, lf), '')
+                    output_ser.write((data + ending).encode('utf-8'))
                 except serial.SerialTimeoutException:
                     logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
 
@@ -49,9 +59,11 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
             #     logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
             #
             #     input_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
-            #     # Пересылаем данные на выходной COM-порт
+            #     # Пересылаем данные на выходной COM-поре
             #     try:
-            #         input_ser.write((data + '\r\n').encode('utf-8') if cr_lf == 1 else data.encode('utf-8'))
+            #         # Получаем соответствующий символ конца строки
+            #         ending = line_endings.get((cr, lf), '')
+            #         input_ser.write((data + ending).encode('utf-8'))
             #     except serial.SerialTimeoutException:
             #         logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
             else:
