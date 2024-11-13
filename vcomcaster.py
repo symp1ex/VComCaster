@@ -1,4 +1,4 @@
-#0.2.5.3
+#0.3.1.1
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
@@ -14,22 +14,49 @@ import threading
 
 stop_event = threading.Event()
 icon = None  # Глобальная переменная для иконки
+stop_tag = 1
+
+def set_stop_tag(value):
+    global stop_tag
+    stop_tag = value
 
 # Функция для обработки первого пункта меню
 def reconnetion_action():
     config = read_config_ini("config.ini")
-    timeout = int(config.get("device", "timeout_reconnect", fallback=None))
+    timeout = int(config.get("service", "timeout_reconnect", fallback=None))
 
+    global stop_tag
     from proxycom import listing_status
     if listing_status == 1:
         stop_port_forwarding(stop_event)
+        stop_tag = 1
+        logger_vcc.info(f"Повторное подключение через ({timeout}) секунд")
+        stop_event.clear()
+        threading.Timer(timeout, start_listen_port, args=(stop_event,)).start()
+        threading.Timer(timeout, lambda: set_stop_tag(0)).start()
+    else:
+        start_listen_port(stop_event)
+        stop_tag = 0
 
-    logger_vcc.info(f"Повторное подключение через ({timeout}) секунд")
-    stop_event.clear()
-    threading.Timer(timeout, start_listen_port, args=(stop_event,)).start()
-
+def reconnetion_auto():
+    while True:
+        config = read_config_ini("config.ini")
+        autosearch = int(config.get("app", "autosearch_device", fallback=None))
+        timeout = int(config.get("service", "timeout_autosearch", fallback=None))
+        if autosearch == 1:
+            from proxycom import listing_status
+            if listing_status == 0 and stop_tag != 1:
+                stop_port_forwarding(stop_event)
+                logger_vcc.info(f"Повторное подключение через ({timeout}) секунд")
+                stop_event.clear()
+                time.sleep(timeout)
+                start_listen_port(stop_event)
+        else:
+            pass
+        time.sleep(timeout)
 
 def stop_listing():
+    global stop_tag
     from proxycom import listing_status
     if listing_status == 0:
         root = tk.Toplevel()
@@ -46,8 +73,9 @@ def stop_listing():
         tk.messagebox.showerror("Ошибка", "Прослушивание портов не запущено", parent=root)
         logger_vcc.error(f"Прослушивание портов не запущено")
     else:
+        stop_tag = 1
         stop_port_forwarding(stop_event)
-        time.sleep(3)
+        time.sleep(2)
         stop_event.clear()
 
 
@@ -58,6 +86,7 @@ def open_settings():
 
 # Функция для выхода из программы
 def exit_action(icon):
+    global stop_tag
     # Создаём дочернее окно подтверждения
     root = tk.Toplevel()
     root.wm_attributes('-alpha', 0) # Делаем окно полностью прозрачным
@@ -75,8 +104,9 @@ def exit_action(icon):
     response = tk.messagebox.askyesno("Выход", "Вы уверены, что хотите выйти?", parent=root)
 
     if response:
+        stop_tag = 1
         stop_port_forwarding(stop_event)
-        time.sleep(5)
+        time.sleep(2)
         icon.stop()  # Останавливаем иконку в трее
         root.quit()  # Закрываем окно подтверждения
         os._exit(0)
@@ -128,7 +158,7 @@ def check_listing_status():
                 up = 0
             elif listing_status == 1 and up != 1:
                 icon.icon = Image.open(io.BytesIO(icon_data_start))
-                up =1
+                up = 1
             time.sleep(2)
 
     swap_icon = threading.Thread(target=swap_icon)
@@ -146,5 +176,10 @@ if __name__ == "__main__":
     setup_icon_tray()  # Создаем иконку
     if autostart_listing == True:
         start_listen_port(stop_event)
+        stop_tag = 0
     check_listing_status()
+
+    reconnetion_auto = threading.Thread(target=reconnetion_auto, daemon=True)
+    reconnetion_auto.start()
+
     icon.run()

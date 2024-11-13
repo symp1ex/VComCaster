@@ -1,8 +1,10 @@
 import configparser, os,sys
 import logging
+import time
 from logging.handlers import TimedRotatingFileHandler
 
-version = "VComCaster v0.2.5.3"
+version = "VComCaster v0.3.1.1"
+
 
 def create_confgi_ini():
     try:
@@ -12,15 +14,20 @@ def create_confgi_ini():
         # Создание секций
         config['app'] = {}
         config['device'] = {}
+        config['service'] = {}
 
         # Запись значения в секцию и ключ
         config['app']['autostart_listing'] = '0'
-        config['app']['logs-autoclear-days'] = '7'
+        config['app']['autosearch_device'] = '0'
+        config['app']['logs-autoclear-days'] = '3'
+        config['device']['device_id'] = ''
+        config['device']['cr-lf'] = '0'
         config['device']['input_port'] = ''
         config['device']['output_port'] = ''
-        config['device']['port_baudrate'] = ''
-        config['device']['device_id'] = ''
-        config['device']['timeout_reconnect'] = '10'
+        config['device']['port_baudrate'] = '115200'
+        config['service']['timeout_autosearch'] = '5'
+        config['service']['timeout_reconnect'] = '5'
+        config['service']['timeout_clearcash'] = '2'
 
         # Запись изменений в файл
         with open('config.ini', 'w') as configfile:
@@ -29,6 +36,7 @@ def create_confgi_ini():
         logger_vcc.info("Создан 'config.ini' по умолчанию")
     except Exception:
         logger_vcc.critical("Не удалось пересоздать 'config.ini', продолжение работы невозможно.", exc_info=True)
+        time.sleep(2)
         os._exit(1)
 
 def read_config_ini(ini_file):
@@ -61,6 +69,11 @@ def logger(file_name, with_console=False):
     config = read_config_ini(ini_file)
     days = int(config.get("global", "logs-autoclear-days", fallback=7))
 
+    log_folder = "logs"
+
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
+
     # Создаем логгер
     logger = logging.getLogger(file_name)
     logger.setLevel(logging.DEBUG)  # Устанавливаем уровень логирования
@@ -69,7 +82,7 @@ def logger(file_name, with_console=False):
     if not logger.hasHandlers():
         # Создаем обработчик для вывода в файл с ротацией
         file_handler = TimedRotatingFileHandler(
-            f"{file_name}.log",
+            f"{log_folder}\\{file_name}.log",
             when="D",         # Ротация раз в день
             interval=1,       # Интервал: 1 день
             backupCount=days,     # Хранить архивы не дольше 7 дней
@@ -94,8 +107,8 @@ def logger(file_name, with_console=False):
 
     return logger
 
-logger_vcc = logger("logs\\vcc", with_console=True)
-logger_vcc_of = logger("logs\\vcc", with_console=False)
+logger_vcc = logger(f"vcc", with_console=True)
+logger_vcc_of = logger("vcc", with_console=False)
 
 
 

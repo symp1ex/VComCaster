@@ -8,14 +8,17 @@ forwarding_thread = None
 listing_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
+    config = read_config_ini("config.ini")
+    cr_lf = int(config.get("device", "cr-lf", fallback=None))
+
     logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
     try:
         # Открываем входной и выходной COM-порты
         input_ser = serial.Serial(input_com_port, baud_rate, timeout=0.1)
     except Exception:
-        logger_vcc.error(f"Ошибка при попытке открыть порт {e}: {input_com_port}", exc_info=True)
+        logger_vcc.error(f"Ошибка при попытке открыть порт: {input_com_port}", exc_info=True)
     if input_ser:
-        logger_vcc.info(f"Порт '{input_com_port}'открыт")
+        logger_vcc.info(f"Порт '{input_com_port}' открыт")
 
     try:
         # Открываем входной и выходной COM-порты
@@ -23,25 +26,36 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
     except Exception:
         logger_vcc.error(f"Ошибка при попытке открыть порт: {output_com_port}", exc_info=True)
     if output_ser :
-        logger_vcc.info(f"Порт '{output_com_port}'открыт")
+        logger_vcc.info(f"Порт '{output_com_port}' открыт")
 
     try:
         while not stop_event.is_set():  # Добавлена проверка флага stop_event
+            config = read_config_ini("config.ini")
+            timeout_clearcash = int(config.get("service", "timeout_clearcash", fallback=None))
             if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
                 data = input_ser.readline().decode('utf-8').rstrip()  # Читаем строку
-                logger_vcc.info(f"На вход получены данные: {data}")
+                logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
 
+                output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
                 # Пересылаем данные на выходной COM-порт
-                output_ser.write((data + '\r\n').encode('utf-8'))  # Отправляем данные
+                try:
+                    output_ser.write((data + '\r\n').encode('utf-8') if cr_lf == 1 else data.encode('utf-8'))
+                except serial.SerialTimeoutException:
+                    logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
+
             #     time.sleep(0.01)
             # if output_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
             #     data = output_ser.readline().decode('utf-8').rstrip()  # Читаем строку
-            #     log_console_out(f"На вход получены данные: {data}", "vcc")
+            #     logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
             #
+            #     input_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
             #     # Пересылаем данные на выходной COM-порт
-            #     input_ser.write((data + '\r\n').encode('utf-8'))  # Отправляем данные
-            else:
-                time.sleep(0.01)
+            #     try:
+            #         input_ser.write((data + '\r\n').encode('utf-8') if cr_lf == 1 else data.encode('utf-8'))
+            #     except serial.SerialTimeoutException:
+            #         logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
+            # else:
+            #     time.sleep(0.01)
     finally:
         try:
             input_ser.close()  # Закрываем входной COM-порт
