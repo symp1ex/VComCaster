@@ -1,9 +1,9 @@
-import configparser, os,sys
+import configparser, os, sys
 import logging
 import time
 from logging.handlers import TimedRotatingFileHandler
 
-version = "VComCaster v0.3.2"
+version = "VComCaster v0.3.2.3"
 
 
 def create_confgi_ini():
@@ -26,9 +26,9 @@ def create_confgi_ini():
         config['device']['port_baudrate'] = '115200'
         config['device']['cr'] = '0'
         config['device']['lf'] = '0'
+        config['service']['timeout_clearcash'] = '2'
         config['service']['timeout_autosearch'] = '5'
         config['service']['timeout_reconnect'] = '5'
-        config['service']['timeout_clearcash'] = '2'
 
         # Запись изменений в файл
         with open('config.ini', 'w') as configfile:
@@ -55,14 +55,16 @@ def read_config_ini(ini_file):
 
 class StdoutRedirectHandler(logging.StreamHandler):
     def __init__(self):
-        # Вызываем StreamHandler с sys.stdout
-        super().__init__(stream=sys.stdout)
+        # Вызываем StreamHandler с sys.stdout, если он определен, иначе используем None
+        super().__init__(stream=sys.stdout if hasattr(sys, 'stdout') else None)
 
     def emit(self, record):
-        # Форматируем сообщение перед выводом
-        msg = self.format(record)
-        # Пишем сообщение в sys.stdout (перехватывается виджетом)
-        sys.stdout.write(msg + '\n')
+        # Проверяем, что sys.stdout все еще доступен
+        if hasattr(sys, 'stdout') and sys.stdout:
+            # Форматируем сообщение перед выводом
+            msg = self.format(record)
+            # Пишем сообщение в sys.stdout (перехватывается виджетом)
+            sys.stdout.write(msg + '\n')
 
 
 def logger(file_name, with_console=False):

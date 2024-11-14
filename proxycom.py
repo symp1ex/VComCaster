@@ -2,7 +2,6 @@ import time
 from logger import logger_vcc, read_config_ini
 import serial
 import threading
-import os
 
 forwarding_thread = None
 listing_status = 0
@@ -18,33 +17,33 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
         (0, 1): '\n',
         (0, 0): ''  # Если оба равны 0, можно использовать пустую строку
     }
-
-    logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
     try:
+        logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
         # Открываем входной и выходной COM-порты
         input_ser = serial.Serial(input_com_port, baud_rate, timeout=0.1)
+        if input_ser:
+            logger_vcc.info(f"Порт '{input_com_port}' открыт")
+            try:
+                # Открываем входной и выходной COM-порты
+                output_ser = serial.Serial(output_com_port, baud_rate, timeout=0.1)
+                if output_ser:
+                    logger_vcc.info(f"Порт '{output_com_port}' открыт")
+            except Exception:
+                logger_vcc.error(f"Ошибка при попытке открыть порт: {output_com_port}", exc_info=True)
     except Exception:
         logger_vcc.error(f"Ошибка при попытке открыть порт: {input_com_port}", exc_info=True)
-    if input_ser:
-        logger_vcc.info(f"Порт '{input_com_port}' открыт")
-
-    try:
-        # Открываем входной и выходной COM-порты
-        output_ser = serial.Serial(output_com_port, baud_rate, timeout=0.1)
-    except Exception:
-        logger_vcc.error(f"Ошибка при попытке открыть порт: {output_com_port}", exc_info=True)
-    if output_ser :
-        logger_vcc.info(f"Порт '{output_com_port}' открыт")
 
     try:
         while not stop_event.is_set():  # Добавлена проверка флага stop_event
             config = read_config_ini("config.ini")
-            timeout_clearcash = int(config.get("service", "timeout_clearcash", fallback=None))
+            timeout_clearcash = float(config.get("service", "timeout_clearcash", fallback=None))
+
+            output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
+
             if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
                 data = input_ser.readline().decode('utf-8').rstrip()  # Читаем строку
                 logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
 
-                output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
                 # Пересылаем данные на выходной COM-поре
                 try:
                     # Получаем соответствующий символ конца строки
@@ -72,16 +71,17 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
         try:
             input_ser.close()  # Закрываем входной COM-порт
             logger_vcc.info(f"Порт '{input_com_port}' освобожден")
+        except UnboundLocalError:
+            pass
         except Exception:
             logger_vcc.error(f"Не удалось освободить порт: '{input_com_port}'", exc_info=True)
         try:
             output_ser.close()  # Закрываем выходной COM-порт
             logger_vcc.info(f"Порт '{output_com_port}' освобожден")
+        except UnboundLocalError:
+            pass
         except Exception:
             logger_vcc.error(f"Не удалось освободить порт: '{output_com_port}'", exc_info=True)
-
-
-
 
 def stop_port_forwarding(stop_event):
     """

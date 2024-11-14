@@ -1,4 +1,4 @@
-#0.3.2
+#0.3.2.3
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread
@@ -6,7 +6,7 @@ from winsettings import init_win_settings
 from winterminal import win_terminal
 import time
 import pystray
-import io, os, sys, ctypes
+import io, os
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -44,6 +44,7 @@ def reconnetion_auto():
         config = read_config_ini("config.ini")
         autosearch = int(config.get("app", "autosearch_device", fallback=None))
         timeout = int(config.get("service", "timeout_autosearch", fallback=None))
+
         if autosearch == 1:
             from proxycom import listing_status
             if listing_status == 0 and stop_tag != 1:
