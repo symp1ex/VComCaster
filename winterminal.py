@@ -1,4 +1,4 @@
-from logger import version
+from logger import version, logger_vcc
 import sys
 from icon import icon_data_start
 import tkinter as tk
@@ -22,26 +22,29 @@ class RedirectText:
         pass
 
 def win_terminal():
-    # Создание главного окна
-    win_terminal = tk.Toplevel()
-    win_terminal.title(version)
+    try:
+        # Создание главного окна
+        win_terminal = tk.Toplevel()
+        win_terminal.title(version)
 
-    win_terminal.geometry("980x512")
-    win_terminal.minsize(width=730, height=360)
+        win_terminal.geometry("980x512")
+        win_terminal.minsize(width=730, height=360)
 
-    # Создание текстового виджета для отображения вывода
-    text_widget = tk.scrolledtext.ScrolledText(win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
-    text_widget.pack()
+        # Создание текстового виджета для отображения вывода
+        text_widget = tk.scrolledtext.ScrolledText(win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
+        text_widget.pack()
 
-    start_icon_image = Image.open(io.BytesIO(icon_data_start))
-    start_icon_image_tk = ImageTk.PhotoImage(start_icon_image)
+        start_icon_image = Image.open(io.BytesIO(icon_data_start))
+        start_icon_image_tk = ImageTk.PhotoImage(start_icon_image)
 
-    # Устанавливаем иконку для окна подтверждения
-    win_terminal.start_icon_image = start_icon_image_tk
-    win_terminal.iconphoto(False, start_icon_image_tk)
+        # Устанавливаем иконку для окна подтверждения
+        win_terminal.start_icon_image = start_icon_image_tk
+        win_terminal.iconphoto(False, start_icon_image_tk)
 
-    # Перенаправление стандартного вывода
-    sys.stdout = RedirectText(text_widget)
+        # Перенаправление стандартного вывода
+        sys.stdout = RedirectText(text_widget)
 
-    # Запуск основного цикла Tkinter
-    win_terminal.transient()
+        # Запуск основного цикла Tkinter
+        win_terminal.transient()
+    except Exception:
+        logger_vcc.error(f"Не удалось инициализировать окно терминала.", exc_info=True)

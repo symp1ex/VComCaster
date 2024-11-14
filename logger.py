@@ -3,7 +3,7 @@ import logging
 import time
 from logging.handlers import TimedRotatingFileHandler
 
-version = "VComCaster v0.3.2.3"
+version = "VComCaster v0.4.1.2"
 
 
 def create_confgi_ini():
@@ -18,7 +18,7 @@ def create_confgi_ini():
 
         # Запись значения в секцию и ключ
         config['app']['autostart_listing'] = '0'
-        config['app']['autosearch_device'] = '0'
+        config['app']['autoreconnect'] = '0'
         config['app']['logs-autoclear-days'] = '3'
         config['device']['device_id'] = ''
         config['device']['input_port'] = 'COM'
@@ -26,8 +26,9 @@ def create_confgi_ini():
         config['device']['port_baudrate'] = '115200'
         config['device']['cr'] = '0'
         config['device']['lf'] = '0'
+        config['service']['amount_rm_char_id'] = '0'
         config['service']['timeout_clearcash'] = '2'
-        config['service']['timeout_autosearch'] = '5'
+        config['service']['timeout_autoreconnect'] = '5'
         config['service']['timeout_reconnect'] = '5'
 
         # Запись изменений в файл
@@ -52,6 +53,24 @@ def read_config_ini(ini_file):
         logger_vcc.error("Произошло исключение при чтении 'config.ini', будет создан новый конфиг.", exc_info=True)
         create_confgi_ini()
 
+def set_config_ini(ini_file, section, option, value):
+    try:
+        # Читаем текущий конфиг
+        config = read_config_ini(ini_file)
+
+        # Проверяем наличие секции, если нужно, добавляем ее
+        if not config.has_section(section):
+            config.add_section(section)
+
+        # Устанавливаем новое значение
+        config.set(section, option, value)
+
+        # Сохраняем изменения в файл
+        with open(ini_file, "w") as configfile:
+            config.write(configfile)
+        logger_vcc.info(f"Значение '{option}' в '{ini_file}' успешно обновлено на '{value}'.")
+    except Exception:
+        logger_vcc.error(f"Произошла ошибка при обновлении '{ini_file}'", exc_info=True)
 
 class StdoutRedirectHandler(logging.StreamHandler):
     def __init__(self):
@@ -111,7 +130,7 @@ def logger(file_name, with_console=False):
     return logger
 
 logger_vcc = logger(f"vcc", with_console=True)
-logger_vcc_of = logger("vcc", with_console=False)
+logger_vcc_of = logger(f"vcc", with_console=False)
 
 
 
