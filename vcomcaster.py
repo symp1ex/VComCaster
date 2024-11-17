@@ -1,4 +1,4 @@
-#0.4.1.2
+#0.5.1.1
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread, update_port_device
@@ -73,6 +73,7 @@ def stop_listing():
         global stop_tag
         from proxycom import listing_status
         if listing_status == 0:
+            stop_tag = 1
             root = tk.Toplevel()
             root.wm_attributes('-alpha', 0) # Делаем окно полностью прозрачным
             root.withdraw()  # Скрываем окно до установки иконки
@@ -201,13 +202,12 @@ if __name__ == "__main__":
     tkinter_thread = threading.Thread(target=run_tkinter, daemon=True)
     tkinter_thread.start()
 
+    reconnetion_auto = threading.Thread(target=reconnetion_auto, daemon=True)
+    reconnetion_auto.start()
+
     setup_icon_tray()  # Создаем иконку
     if autostart_listing == True:
         start_listen_port(stop_event)
         stop_tag = 0
     check_listing_status()
-
-    reconnetion_auto = threading.Thread(target=reconnetion_auto, daemon=True)
-    reconnetion_auto.start()
-
     icon.run()
