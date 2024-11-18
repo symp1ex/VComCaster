@@ -207,9 +207,9 @@ def init_win_settings():
         autoreconnect_timeout_Entry.insert(0, timeout_autoreconnect)
 
         Label_timeout_reconnect = tk.Label(settings_window, text="Задержка перед ручным переподключением (c.):")
-        Label_timeout_reconnect.place(relx=0.013, rely=0.589, height=22, width=284)
-        Label_autoreconnect_timeout.configure(anchor='w')
-        Label_autoreconnect_timeout.configure(compound='left')
+        Label_timeout_reconnect.place(relx=0.018, rely=0.589, height=22, width=284)
+        Label_timeout_reconnect.configure(anchor='w')
+        Label_timeout_reconnect.configure(compound='left')
         timeout_reconnect_Entry = tk.Entry(settings_window)
         timeout_reconnect_Entry.place(relx=0.777, rely=0.589, height=20, relwidth=0.11)
         timeout_reconnect_Entry.insert(0, timeout_reconnect)

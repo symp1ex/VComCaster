@@ -13,9 +13,10 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
     lf = int(config.get("device", "lf", fallback=None))
     # Определяем символ конца строки на основе значений cr и lf
     line_endings = {
-        (1, 1): '\r\n',
-        (1, 0): '\r',
-        (0, 1): '\n'
+        (1, 1): b'\r\n',
+        (1, 0): b'\r',
+        (0, 1): b'\n',
+        (0, 0): b''
     }
     try:
         logger_vcc.info(f"Открываем порты: '{input_com_port}' и '{output_com_port}'...")
@@ -40,36 +41,24 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
 
             output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
             input_ser.write_timeout = timeout_clearcash
+            ending = line_endings.get((cr, lf), b'')
 
-            if cr or lf == 1:
-                if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-                    data = input_ser.readline().decode('utf-8').rstrip()  # Читаем строку
-                    logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
-
-                    # Пересылаем данные на выходной COM-порт
-                    try:
-                        # Получаем соответствующий символ конца строки
-                        ending = line_endings.get((cr, lf), '')
-                        output_ser.write((data + ending).encode('utf-8'))
-                    except serial.SerialTimeoutException:
-                        logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
-            else:
-                if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-                    data = input_ser.readline().rstrip()  # Читаем строку
-                    logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
-                    # Пересылаем данные на выходной COM-порт
-                    try:
-                        output_ser.write(data)
-                    except serial.SerialTimeoutException:
-                        logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
-                if output_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-                    data = output_ser.readline().rstrip()  # Читаем строку
-                    logger_vcc.info(f"На порт '{output_com_port}' получены данные: {data}")
-                    # Пересылаем данные на выходной COM-порт
-                    try:
-                        input_ser.write(data)
-                    except serial.SerialTimeoutException:
-                        logger_vcc.warning(f"Нет слушателя на порту '{input_com_port}'. Данные отброшены.")
+            if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
+                data = input_ser.readall()  # Читаем строку
+                logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
+                # Пересылаем данные на выходной COM-порт
+                try:
+                    output_ser.write(data + ending)
+                except serial.SerialTimeoutException:
+                    logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
+            if output_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
+                data = output_ser.readall()  # Читаем строку
+                logger_vcc.info(f"На порт '{output_com_port}' получены данные: {data}")
+                # Пересылаем данные на выходной COM-порт
+                try:
+                    input_ser.write(data + ending)
+                except serial.SerialTimeoutException:
+                    logger_vcc.warning(f"Нет слушателя на порту '{input_com_port}'. Данные отброшены.")
             time.sleep(0.01)
     except UnboundLocalError:
         pass
