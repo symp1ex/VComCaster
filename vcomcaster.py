@@ -1,4 +1,4 @@
-#0.5.1.1
+#0.5.2
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread, update_port_device

@@ -145,6 +145,17 @@ def init_win_settings():
         device_id_entry.place(relx=0.025, rely=0.036, height=20, relwidth=0.951)
         device_id_entry.insert(0, device_id)  # Устанавливаем текущее значение
 
+        def paste_clipboard():
+            try:
+                clipboard_content = settings_window.clipboard_get()  # Получаем содержимое буфера обмена
+                device_id_entry.delete(0, tk.END)  # Очищаем поле ввода
+                device_id_entry.insert(0, clipboard_content)  # Вставляем содержимое буфера обмена
+            except Exception:
+                logger_vcc("Не удалось получить содержимое буфера обмена", exc_info=True)
+
+        paste_button = tk.Button(settings_window, text="Вставить", command=paste_clipboard)
+        paste_button.place(relx=0.825, rely=0.034, height=22, relwidth=0.15)  # Размещаем кнопку рядом с полем ввода
+
         input_port_label = tk.Label(settings_window, text="Входной порт:")
         input_port_label.place(relx=0.008, rely=0.107, height=22, width=94)
         input_port_entry = tk.Entry(settings_window, width=8)
