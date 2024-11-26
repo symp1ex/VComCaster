@@ -2,8 +2,9 @@ import configparser, os, sys
 import logging
 import time
 from logging.handlers import TimedRotatingFileHandler
+from datetime import datetime
 
-version = "VComCaster v0.5.2.3"
+version = "VComCaster v0.5.2.6"
 
 
 def create_confgi_ini():
@@ -105,7 +106,7 @@ def logger(file_name, with_console=False):
         # Создаем обработчик для вывода в файл с ротацией
         file_handler = TimedRotatingFileHandler(
             f"{log_folder}\\{file_name}.log",
-            when="D",         # Ротация раз в день
+            when="midnight",         # Ротация в полночь
             interval=1,       # Интервал: 1 день
             backupCount=days,     # Хранить архивы не дольше 7 дней
             encoding="utf-8"
@@ -118,6 +119,17 @@ def logger(file_name, with_console=False):
 
         # Добавляем обработчик к логгеру
         logger.addHandler(file_handler)
+
+    # Проверяем, нужно ли создать новый файл лога
+    current_date = datetime.now().date()
+    log_file_path = f"{log_folder}/{file_name}.log"
+
+    if os.path.exists(log_file_path):
+        # Получаем дату последней модификации файла
+        last_modified_date = datetime.fromtimestamp(os.path.getmtime(log_file_path)).date()
+        if last_modified_date < current_date:
+            # Если дата последней модификации меньше текущей, создаем новый файл
+            file_handler.doRollover()
 
         # Добавляем обработчик для вывода на консоль
         if with_console:

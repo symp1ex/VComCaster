@@ -151,7 +151,7 @@ def init_win_settings():
                 device_id_entry.delete(0, tk.END)  # Очищаем поле ввода
                 device_id_entry.insert(0, clipboard_content)  # Вставляем содержимое буфера обмена
             except Exception:
-                logger_vcc("Не удалось получить содержимое буфера обмена", exc_info=True)
+                logger_vcc.warning("Не удалось получить содержимое буфера обмена", exc_info=True)
 
         paste_button = tk.Button(settings_window, text="Вставить", command=paste_clipboard)
         paste_button.place(relx=0.825, rely=0.034, height=22, relwidth=0.15)  # Размещаем кнопку рядом с полем ввода
@@ -219,18 +219,18 @@ def init_win_settings():
         Label_timeout_clearcash.configure(anchor='w')
         Label_timeout_clearcash.configure(compound='left')
         timeout_clearcash_Entry = tk.Entry(settings_window)
-        timeout_clearcash_Entry.place(relx=0.551, rely=0.661, height=20, relwidth=0.11)
+        timeout_clearcash_Entry.place(relx=0.563, rely=0.661, height=20, relwidth=0.11)
         timeout_clearcash_Entry.insert(0, timeout_clearcash)
 
-        Label1_logs_days = tk.Label(settings_window, text="Хранить логи")
-        Label1_logs_days.place(relx=0.019, rely=0.732, height=21, width=84)
+        Label1_logs_days = tk.Label(settings_window, text="Удалять логи старше")
+        Label1_logs_days.place(relx=0.019, rely=0.732, height=21, width=124)
         Label1_logs_days.configure(anchor='w')
         Label1_logs_days.configure(compound='left')
         logs_days_Entry = tk.Entry(settings_window)
-        logs_days_Entry.place(relx=0.244, rely=0.732, height=20, relwidth=0.11)
+        logs_days_Entry.place(relx=0.354, rely=0.732, height=20, relwidth=0.11)
         logs_days_Entry.insert(0, logs_autoclear_days)
         Label2_logs_day = tk.Label(settings_window, text="дней")
-        Label2_logs_day.place(relx=0.369, rely=0.732, height=21, width=34)
+        Label2_logs_day.place(relx=0.489, rely=0.732, height=21, width=34)
         Label2_logs_day.configure(anchor='w')
         Label2_logs_day.configure(compound='left')
     except Exception:
