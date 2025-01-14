@@ -21,30 +21,46 @@ class RedirectText:
         # Пустой метод, необходимый для совместимости с sys.stdout
         pass
 
-def win_terminal():
-    try:
-        # Создание главного окна
-        win_terminal = tk.Toplevel()
-        win_terminal.title(version)
+class WinTerminalUi(object):
+    def __init__(self):
+        self.win_terminal = None
 
-        win_terminal.geometry("980x512")
-        win_terminal.minsize(width=730, height=360)
+    def on_close(self, win_terminal):
+        self.win_terminal = None
+        win_terminal.destroy()
 
-        # Создание текстового виджета для отображения вывода
-        text_widget = tk.scrolledtext.ScrolledText(win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
-        text_widget.pack()
+    def create_terminal_window(self):
+        try:
+            self.win_terminal = tk.Toplevel()
+            self.win_terminal.protocol("WM_DELETE_WINDOW", lambda: self.on_close(self.win_terminal))
+            # Создание главного окна
+            self.win_terminal.title(version)
 
-        start_icon_image = Image.open(io.BytesIO(icon_data_start))
-        start_icon_image_tk = ImageTk.PhotoImage(start_icon_image)
+            self.win_terminal.geometry("980x512")
+            self.win_terminal.minsize(width=730, height=360)
 
-        # Устанавливаем иконку для окна подтверждения
-        win_terminal.start_icon_image = start_icon_image_tk
-        win_terminal.iconphoto(False, start_icon_image_tk)
+            # Создание текстового виджета для отображения вывода
+            text_widget = tk.scrolledtext.ScrolledText(self.win_terminal, wrap=tk.WORD, height=512, width=980, bg="#0c0c0c", fg="white")
+            text_widget.pack()
 
-        # Перенаправление стандартного вывода
-        sys.stdout = RedirectText(text_widget)
+            start_icon_image = Image.open(io.BytesIO(icon_data_start))
+            start_icon_image_tk = ImageTk.PhotoImage(start_icon_image)
 
-        # Запуск основного цикла Tkinter
-        win_terminal.transient()
-    except Exception:
-        logger_vcc.error(f"Не удалось инициализировать окно терминала.", exc_info=True)
+            # Устанавливаем иконку для окна подтверждения
+            self.win_terminal.start_icon_image = start_icon_image_tk
+            self.win_terminal.iconphoto(False, start_icon_image_tk)
+
+            # Перенаправление стандартного вывода
+            sys.stdout = RedirectText(text_widget)
+
+            # Запуск основного цикла Tkinter
+            self.win_terminal.transient()
+        except Exception:
+            logger_vcc.error(f"Не удалось инициализировать окно терминала.", exc_info=True)
+
+    def init_win_terminal(self):
+        if not self.win_terminal:
+            self.create_terminal_window()
+        else:
+            self.win_terminal.destroy()
+            self.win_terminal = None

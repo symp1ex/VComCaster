@@ -1,12 +1,12 @@
-#0.5.2.6
 from logger import logger_vcc, read_config_ini, version
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread, update_port_device
-from winsettings import init_win_settings
-from winterminal import win_terminal
+from winsettings import WinSettingsUi
+from winterminal import WinTerminalUi
 import time
 import pystray
-import io, os
+import io
+import os
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -24,7 +24,7 @@ def set_stop_tag(value):
 def reconnetion_action():
     try:
         config = read_config_ini("config.ini")
-        timeout = int(config.get("service", "timeout_reconnect", fallback=None))
+        timeout = int(config.get("service", "timeout_reconnect", fallback="10"))
 
         global stop_tag
         from proxycom import listing_status
@@ -49,8 +49,8 @@ def reconnetion_auto():
     try:
         while True:
             config = read_config_ini("config.ini")
-            autoreconnect = int(config.get("app", "autoreconnect", fallback=None))
-            timeout = int(config.get("service", "timeout_autoreconnect", fallback=None))
+            autoreconnect = int(config.get("app", "autoreconnect", fallback="0"))
+            timeout = int(config.get("service", "timeout_autoreconnect", fallback="10"))
 
             if autoreconnect == 1:
                 from proxycom import listing_status
@@ -96,11 +96,6 @@ def stop_listing():
         logger_vcc.error(f"Не удалось инициировать освобождение портов.",
                          exc_info=True)
 
-# Функция для обработки второго пункта меню
-def open_settings():
-    init_win_settings()
-
-
 # Функция для выхода из программы
 def exit_action(icon):
     try:
@@ -140,7 +135,7 @@ def setup_icon_tray():
         global icon  # Используем глобальную переменную для иконки
         config = read_config_ini("config.ini")
 
-        autostart_listing = int(config.get("app", "autostart_listing", fallback=None))
+        autostart_listing = int(config.get("app", "autostart_listing", fallback="0"))
 
         if autostart_listing == True:
             # Преобразуем бинарные данные для иконки
@@ -152,8 +147,8 @@ def setup_icon_tray():
         menu = pystray.Menu(
             pystray.MenuItem("Переподключиться", reconnetion_action),
             pystray.MenuItem("Стоп", stop_listing),
-            pystray.MenuItem("Окно терминала", win_terminal),
-            pystray.MenuItem("Настройки", open_settings),
+            pystray.MenuItem("Окно терминала", WinTerminalUi().init_win_terminal),
+            pystray.MenuItem("Настройки", WinSettingsUi().init_win_settings),
             pystray.MenuItem("Выход", exit_action)
         )
 
@@ -196,7 +191,9 @@ def check_listing_status():
 # Запускаем иконку и tkinter в отдельных потоках
 if __name__ == "__main__":
     config = read_config_ini("config.ini")
-    autostart_listing = int(config.get("app", "autostart_listing", fallback=None))
+    if not config:
+        cre
+    autostart_listing = int(config.get("app", "autostart_listing", fallback="0"))
 
     # Запускаем tkinter в отдельном потоке
     tkinter_thread = threading.Thread(target=run_tkinter, daemon=True)

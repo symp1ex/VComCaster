@@ -1,10 +1,12 @@
-import configparser, os, sys
+import configparser
+import os
+import sys
 import logging
 import time
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 
-version = "VComCaster v0.5.2.6"
+version = "VComCaster v0.5.3.2"
 
 
 def create_confgi_ini():
@@ -28,7 +30,7 @@ def create_confgi_ini():
         config['device']['cr'] = '0'
         config['device']['lf'] = '0'
         config['service']['amount_rm_char_id'] = '0'
-        config['service']['timeout_clearcash'] = '2'
+        config['service']['timeout_clearcash'] = '1.5'
         config['service']['timeout_autoreconnect'] = '5'
         config['service']['timeout_reconnect'] = '5'
 
@@ -45,7 +47,9 @@ def create_confgi_ini():
 def read_config_ini(ini_file):
     try:
         config = configparser.ConfigParser()
-        config.read(ini_file)
+        files_read = config.read(ini_file)
+        if not files_read:  # Если список пуст, файл не был прочитан
+            raise FileNotFoundError(f"Файл '{ini_file}' не найден.")
         return config
     except FileNotFoundError:
         logger_vcc.warning("Файл'config.ini' не найден, будет создан новый конфиг.")
@@ -89,8 +93,11 @@ class StdoutRedirectHandler(logging.StreamHandler):
 
 def logger(file_name, with_console=False):
     ini_file = "config.ini"
-    config = read_config_ini(ini_file)
-    days = int(config.get("app", "logs-autoclear-days"))
+    try:
+        config = read_config_ini(ini_file)
+        days = int(config.get("app", "logs-autoclear-days", fallback='3'))
+    except Exception:
+        days = 3
 
     log_folder = "logs"
 

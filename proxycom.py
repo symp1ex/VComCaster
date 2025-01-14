@@ -2,15 +2,16 @@ import time
 from logger import logger_vcc, read_config_ini, set_config_ini
 import serial
 import threading
-import win32com.client, pythoncom
+import win32com.client
+import pythoncom
 
 forwarding_thread = None
 listing_status = 0
 
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
     config = read_config_ini("config.ini")
-    cr = int(config.get("device", "cr", fallback=None))
-    lf = int(config.get("device", "lf", fallback=None))
+    cr = int(config.get("device", "cr", fallback="0"))
+    lf = int(config.get("device", "lf", fallback="0"))
     # Определяем символ конца строки на основе значений cr и lf
     line_endings = {
         (1, 1): b'\r\n',
@@ -37,7 +38,7 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
     try:
         while not stop_event.is_set():  # Добавлена проверка флага stop_event
             config = read_config_ini("config.ini")
-            timeout_clearcash = float(config.get("service", "timeout_clearcash", fallback=None))
+            timeout_clearcash = float(config.get("service", "timeout_clearcash", fallback="1.5"))
 
             output_ser.write_timeout = timeout_clearcash  # Tайм-аут записи в 2 секунды
             input_ser.write_timeout = timeout_clearcash
@@ -107,7 +108,7 @@ def start_listen_port(stop_event):
         # Настройки COM-портов
         input_com_port = config.get("device", "input_port", fallback=None)
         output_com_port = config.get("device", "output_port", fallback=None)
-        baud_rate = config.get("device", "port_baudrate", fallback=None)
+        baud_rate = config.get("device", "port_baudrate", fallback="9600")
 
         forwarding_thread = threading.Thread(target=start_port_forwarding, args=(input_com_port, output_com_port, baud_rate, stop_event), daemon=True)
 
@@ -165,7 +166,7 @@ def update_port_device():
     config = read_config_ini("config.ini")
     input_com_port = config.get("device", "input_port", fallback=None)
     device_id = config.get("device", "device_id", fallback=None)
-    chars_to_remove = int(config.get("service", "amount_rm_char_id", fallback=None))
+    chars_to_remove = int(config.get("service", "amount_rm_char_id", fallback="0"))
 
     if device_id != "":
         device_com_port = get_ports_from_wmi_by_partial_id(device_id, chars_to_remove)
