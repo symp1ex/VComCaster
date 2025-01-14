@@ -191,8 +191,6 @@ def check_listing_status():
 # Запускаем иконку и tkinter в отдельных потоках
 if __name__ == "__main__":
     config = read_config_ini("config.ini")
-    if not config:
-        cre
     autostart_listing = int(config.get("app", "autostart_listing", fallback="0"))
 
     # Запускаем tkinter в отдельном потоке
