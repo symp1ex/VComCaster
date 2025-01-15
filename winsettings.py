@@ -39,6 +39,18 @@ def toggle_checkbox(cr_checkbox_var, lf_checkbox_var, listing_checkbox_var, auto
     toggle_checkbox_autostart_listing(listing_checkbox_var)
     toggle_checkbox_autoreconnect(autoreconnect_checkbox_var)
 
+def valdiate_num_values(value, paramname):
+    try:
+        value = float(value)
+        if value > 0:
+            return value
+        else:
+            logger_vcc.warn(f"Значение параметра {paramname} должно быть положительным числом.")
+    except ValueError:
+        logger_vcc.error(f"Не удалось получить значение параметра {paramname}.", exc_info=True)
+    except Exception:
+        logger_vcc.error(f"Значение параметра {paramname} должно быть положительным числом", exc_info=True)
+
 
 class WinSettingsUi(object):
     def __init__(self):
@@ -212,6 +224,8 @@ class WinSettingsUi(object):
             logger_vcc.warning("Не удалось получить содержимое буфера обмена", exc_info=True)
 
     def on_save(self):
+        from vcomcaster import message_error_box
+
         new_device_id = self.device_id_entry.get()
         if self.device_id != new_device_id:
             set_config_ini("config.ini", "device", "device_id", new_device_id)
@@ -244,21 +258,33 @@ class WinSettingsUi(object):
         if autoreconnect_checkbox != self.autoreconnect:
             set_config_ini("config.ini", "app", "autoreconnect", str(autoreconnect_checkbox))
 
-        new_timeout_autoreconnect = self.autoreconnect_timeout_Entry.get()
-        if new_timeout_autoreconnect != self.timeout_autoreconnect:
-            set_config_ini("config.ini", "service", "timeout_autoreconnect", new_timeout_autoreconnect)
+        new_timeout_autoreconnect = valdiate_num_values(self.autoreconnect_timeout_Entry.get(), "timeout_autoreconnect")
+        if not new_timeout_autoreconnect:
+            message_error_box(f"Значение тайм-аута для автоматического переподключения должно быть положительным числом.")
+            return
+        elif str(new_timeout_autoreconnect) != self.timeout_autoreconnect:
+            set_config_ini("config.ini", "service", "timeout_autoreconnect", str(new_timeout_autoreconnect))
 
-        new_timeout_reconnect = self.timeout_reconnect_Entry.get()
-        if new_timeout_reconnect != self.timeout_reconnect:
-            set_config_ini("config.ini", "service", "timeout_reconnect", new_timeout_reconnect)
+        new_timeout_reconnect = valdiate_num_values(self.timeout_reconnect_Entry.get(), "timeout_reconnect")
+        if not new_timeout_reconnect:
+            message_error_box(f"Значение тайм-аута для ручного переподключения должно быть положительным числом.")
+            return
+        elif str(new_timeout_reconnect) != self.timeout_reconnect:
+            set_config_ini("config.ini", "service", "timeout_reconnect", str(new_timeout_reconnect))
 
-        new_timeout_clearcash = self.timeout_clearcash_Entry.get()
-        if new_timeout_clearcash != self.timeout_clearcash:
-            set_config_ini("config.ini", "service", "timeout_clearcash", new_timeout_clearcash)
+        new_timeout_clearcash = valdiate_num_values(self.timeout_clearcash_Entry.get(), "timeout_clearcash")
+        if not new_timeout_clearcash:
+            message_error_box(f"Значение тайм-аута для хранения данных в буфере должно быть положительным числом.")
+            return
+        elif str(new_timeout_clearcash) != self.timeout_clearcash:
+            set_config_ini("config.ini", "service", "timeout_clearcash", str(new_timeout_clearcash))
 
-        new_logs_autoclear_days = self.logs_days_Entry.get()
-        if new_logs_autoclear_days != self.logs_autoclear_days:
-            set_config_ini("config.ini", "app", "logs-autoclear-days", new_logs_autoclear_days)
+        new_logs_autoclear_days = valdiate_num_values(self.logs_days_Entry.get(), "logs-autoclear-days")
+        if not new_logs_autoclear_days:
+            message_error_box(f"Количество дней хранения логов должно быть положительным числом.")
+            return
+        elif str(int(new_logs_autoclear_days)) != self.logs_autoclear_days:
+            set_config_ini("config.ini", "app", "logs-autoclear-days", str(int(new_logs_autoclear_days)))
 
         self.settings_window.destroy()
         self.settings_window = None

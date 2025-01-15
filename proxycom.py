@@ -8,6 +8,15 @@ import pythoncom
 forwarding_thread = None
 listing_status = 0
 
+def transfer_data(input_data, output_data, input_port, output_port, ending):
+    data = input_data.readall()  # Читаем строку
+    logger_vcc.info(f"На порт '{input_port}' получены данные: {data}")
+    # Пересылаем данные на выходной COM-порт
+    try:
+        output_data.write(data + ending)
+    except serial.SerialTimeoutException:
+        logger_vcc.warning(f"Нет слушателя на порту '{output_port}'. Данные отброшены.")
+
 def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event):
     config = read_config_ini("config.ini")
     cr = int(config.get("device", "cr", fallback="0"))
@@ -45,21 +54,9 @@ def start_port_forwarding(input_com_port, output_com_port, baud_rate, stop_event
             ending = line_endings.get((cr, lf), b'')
 
             if input_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-                data = input_ser.readall()  # Читаем строку
-                logger_vcc.info(f"На порт '{input_com_port}' получены данные: {data}")
-                # Пересылаем данные на выходной COM-порт
-                try:
-                    output_ser.write(data + ending)
-                except serial.SerialTimeoutException:
-                    logger_vcc.warning(f"Нет слушателя на порту '{output_com_port}'. Данные отброшены.")
+                transfer_data(input_ser, output_ser, input_com_port, output_com_port, ending)
             if output_ser.in_waiting > 0:  # Проверяем, есть ли данные для чтения
-                data = output_ser.readall()  # Читаем строку
-                logger_vcc.info(f"На порт '{output_com_port}' получены данные: {data}")
-                # Пересылаем данные на выходной COM-порт
-                try:
-                    input_ser.write(data + ending)
-                except serial.SerialTimeoutException:
-                    logger_vcc.warning(f"Нет слушателя на порту '{input_com_port}'. Данные отброшены.")
+                transfer_data(output_ser, input_ser, output_com_port,  input_com_port, ending)
             time.sleep(0.01)
     except UnboundLocalError:
         pass

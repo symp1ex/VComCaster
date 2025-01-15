@@ -6,7 +6,7 @@ import time
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 
-version = "VComCaster v0.5.3.2"
+version = "VComCaster v0.5.4.3"
 
 
 def create_confgi_ini():

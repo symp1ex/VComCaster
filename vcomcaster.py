@@ -24,7 +24,7 @@ def set_stop_tag(value):
 def reconnetion_action():
     try:
         config = read_config_ini("config.ini")
-        timeout = int(config.get("service", "timeout_reconnect", fallback="10"))
+        timeout = float(config.get("service", "timeout_reconnect", fallback="10"))
 
         global stop_tag
         from proxycom import listing_status
@@ -50,7 +50,7 @@ def reconnetion_auto():
         while True:
             config = read_config_ini("config.ini")
             autoreconnect = int(config.get("app", "autoreconnect", fallback="0"))
-            timeout = int(config.get("service", "timeout_autoreconnect", fallback="10"))
+            timeout = float(config.get("service", "timeout_autoreconnect", fallback="10"))
 
             if autoreconnect == 1:
                 from proxycom import listing_status
@@ -74,18 +74,7 @@ def stop_listing():
         from proxycom import listing_status
         if listing_status == 0:
             stop_tag = 1
-            root = tk.Toplevel()
-            root.wm_attributes('-alpha', 0) # Делаем окно полностью прозрачным
-            root.withdraw()  # Скрываем окно до установки иконки
-
-            stop_icon_image = Image.open(io.BytesIO(icon_data_stop))
-            stop_icon_image_tk = ImageTk.PhotoImage(stop_icon_image)
-
-            # Устанавливаем иконку для окна подтверждения
-            root.stop_icon_image = stop_icon_image_tk
-            root.iconphoto(False, stop_icon_image_tk)
-
-            tk.messagebox.showerror("Ошибка", "Прослушивание портов не запущено", parent=root)
+            message_error_box("Прослушивание портов не запущено")
             logger_vcc.error(f"Прослушивание портов не запущено")
         else:
             stop_tag = 1
@@ -128,6 +117,27 @@ def exit_action(icon):
     except Exception:
         logger_vcc.critical(f"Не удалось инициализировать окно подтверждения закрытия приложения.", exc_info=True)
         os._exit(1)
+
+def message_error_box(message):
+    root = tk.Toplevel()
+    root.wm_attributes('-alpha', 0)  # Делаем окно полностью прозрачным
+    root.withdraw()  # Скрываем окно до установки иконки
+
+    stop_icon_image = Image.open(io.BytesIO(icon_data_stop))
+    stop_icon_image_tk = ImageTk.PhotoImage(stop_icon_image)
+
+    # Устанавливаем иконку для окна подтверждения
+    root.stop_icon_image = stop_icon_image_tk
+    root.iconphoto(False, stop_icon_image_tk)
+
+    # Захватываем все события ввода, чтобы сделать окно модальным
+    root.grab_set()
+
+    tk.messagebox.showerror("Ошибка", message, parent=root)
+
+    # Освобождаем захват после закрытия окна сообщения
+    root.grab_release()
+    root.destroy()
 
 # Функция для создания иконки
 def setup_icon_tray():
