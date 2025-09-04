@@ -53,7 +53,7 @@ cr = 0
 lf = 0
 
 [service]
-amount_rm_char_id = 7
+amount_rm_char_id = 0
 timeout_autoreconnect = 5
 timeout_reconnect = 5
 timeout_clearcash = 1.5
