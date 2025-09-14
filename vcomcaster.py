@@ -1,8 +1,9 @@
-from logger import logger_vcc, read_config_ini, version
+from logger import logger_vcc, read_config_ini
 from icon import icon_data_start, icon_data_stop
 from proxycom import start_listen_port, stop_port_forwarding, status_forwarding_thread, update_port_device
 from winsettings import WinSettingsUi
 from winterminal import WinTerminalUi
+import about
 import time
 import pystray
 import io
@@ -142,28 +143,39 @@ def message_error_box(message):
 # Функция для создания иконки
 def setup_icon_tray():
     try:
-        global icon  # Используем глобальную переменную для иконки
+        global icon
         config = read_config_ini("config.ini")
-
         autostart_listing = int(config.get("app", "autostart_listing", fallback="0"))
 
         if autostart_listing == True:
-            # Преобразуем бинарные данные для иконки
             icon_image = Image.open(io.BytesIO(icon_data_start))
         else:
             icon_image = Image.open(io.BytesIO(icon_data_stop))
 
+        # Создаём основной пункт меню, который будет активироваться по левому клику
+        settings_item = pystray.MenuItem(
+            "Настройки",
+            WinSettingsUi().init_win_settings,
+            default=True  # Делаем этот пункт меню действием по умолчанию
+        )
+
         # Создаём меню
         menu = pystray.Menu(
+            settings_item,  # Добавляем пункт настроек первым
             pystray.MenuItem("Переподключиться", reconnetion_action),
             pystray.MenuItem("Стоп", stop_listing),
             pystray.MenuItem("Окно терминала", WinTerminalUi().init_win_terminal),
-            pystray.MenuItem("Настройки", WinSettingsUi().init_win_settings),
             pystray.MenuItem("Выход", exit_action)
         )
 
-        # Создаём иконку и добавляем подсказку (tooltip) при наведении
-        icon = pystray.Icon("icon", icon_image, menu=menu, title=f"{version}")  # Подсказка при наведении
+        # Создаём иконку
+        icon = pystray.Icon(
+            "icon",
+            icon_image,
+            menu=menu,
+            title=f"{about.version}"
+        )
+
     except Exception:
         logger_vcc.critical(f"Не удалось инициализировать основной интерфейс.", exc_info=True)
         os._exit(1)

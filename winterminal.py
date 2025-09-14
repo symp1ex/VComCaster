@@ -1,4 +1,5 @@
-from logger import version, logger_vcc
+from logger import logger_vcc
+import about
 import sys
 from icon import icon_data_start
 import tkinter as tk
@@ -34,7 +35,7 @@ class WinTerminalUi(object):
             self.win_terminal = tk.Toplevel()
             self.win_terminal.protocol("WM_DELETE_WINDOW", lambda: self.on_close(self.win_terminal))
             # Создание главного окна
-            self.win_terminal.title(version)
+            self.win_terminal.title(about.version)
 
             self.win_terminal.geometry("980x512")
             self.win_terminal.minsize(width=730, height=360)
